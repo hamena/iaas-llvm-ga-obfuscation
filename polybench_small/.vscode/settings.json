@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "polybench.h": "c",
+        "2mm.h": "c",
+        "stdlib.h": "c"
+    }
+}
