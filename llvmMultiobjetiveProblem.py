@@ -9,11 +9,11 @@ class llvmMultiobjetiveProblem(IntegerProblem):
 
     def __init__(self, is_minimization: bool = True, max_evaluations: int = 25000,
                  from_file: bool = False, filename: str = None, solution_length: int = 100,
-                 population_size = int, offspring_population_size = int, verbose: bool = True,
-                 upper_bound : int = 86, assambly_lines: bool = True,
+                 population_size = int, offspring_population_size = int, verbose: bool = True, upper_bound : int = 86, 
                  dictionary_preloaded: bool = True, dictionary_name: str = 'llvm_dictionary.data'):
 
-        self.llvm = LlvmUtils(llvmpath='/usr/bin/', source="polybench_small/polybench_small_original.bc" ,jobid='llvm_multiobjetive', useperf=False)
+        self.llvm = LlvmUtils(llvmpath='/usr/bin', clangexe="clang-10", optexe="opt-10", llcexe="llc-10", 
+                            source="polybench_small/polybench_small_original.bc" ,jobid='llvm_multiobjetive', useperf=False)
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
@@ -28,7 +28,6 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.phenotype = 0
         self.population_size = population_size
         self.offspring_population_size = offspring_population_size
-        self.assambly_lines = assambly_lines # False means fitness = runtime. True means fitness = code lines
         self.dictionary = dict()
         self.verbose = verbose
         self.dictionary_preloaded = dictionary_preloaded

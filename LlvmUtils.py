@@ -28,11 +28,17 @@ class LlvmUtils():
     useperf = True means use perf for runtime so perf has to be installed
     '''
 
-    def __init__(self, llvmpath: str = "/llvm/bin/", basepath: str = "./", benchmark: str = "polybench_small",
-                 generator: str = "original_merged_generator.sh", source: str = "polybench_small_original.bc",
-                 runs: int = 1, jobid: str = "", useperf : bool = True):
+    def __init__(self, llvmpath: str="/llvm/bin/", clangexe: str="clang", optexe: str="opt", 
+                llcexe: str="llc", basepath: str="./", benchmark: str = "polybench_small",
+                generator: str="original_merged_generator.sh", source: str="polybench_small_original.bc",
+                runs: int=1, jobid: str="", useperf: bool=True):
         self.llvmpath = llvmpath
+        llvmpath += "/" if llvmpath[-1] != '/' else ""
+        self.clangexe = clangexe
+        self.optexe = optexe
+        self.llcexe = llcexe
         self.basepath = basepath
+        basepath += "/" if basepath[-1] != '/' else ""
         self.benchmark = benchmark
         self.generator = generator
         self.source = source
@@ -75,8 +81,8 @@ class LlvmUtils():
         copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
         average = 0.0
         if self.toIR(passes):
-            os.system("{}clang-10 -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
-                       self.llvmpath,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
+            os.system("{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
+                       self.llvmpath,self.clangexe,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
                        self.basepath,self.jobid,self.basepath,self.jobid)))
             if self.useperf:
                 cmd = subprocess.check_output("{}runtimes.sh {}exec_{}.o {}".format(
@@ -121,14 +127,14 @@ class LlvmUtils():
     def toAssembly(self, source: str = "optimized.bc", output: str = "optimized.ll"):
         source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
         output = "{}{}".format(self.basepath,output.replace(".ll","_{}.ll".format(self.jobid)))
-        os.system("{}llc-10 {}{} -o {}{}".format(self.llvmpath,
+        os.system("{}{} {}{} -o {}{}".format(self.llvmpath,self.llcexe,
                   self.basepath,source,self.basepath,output))
 
     # To apply transformations in one line
     def allinone(self, passes: str = '-O3') -> bool:
         result = True
-        cmd = subprocess.Popen("{}opt-10 {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                                self.llvmpath,passes,self.basepath,self.jobid,self.basepath,
+        cmd = subprocess.Popen("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
+                                self.llvmpath,self.optexe,passes,self.basepath,self.jobid,self.basepath,
                                 self.jobid),shell=True,stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL)
         cmd.wait(timeout=20)
@@ -143,8 +149,8 @@ class LlvmUtils():
         passeslist = passes.split(' ')
         self.onebyones += 1
         for llvm_pass in passeslist:
-            cmd = subprocess.Popen("{}opt-10 {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                                    self.llvmpath,llvm_pass, self.basepath,self.jobid,
+            cmd = subprocess.Popen("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
+                                    self.llvmpath,self.optexe,llvm_pass, self.basepath,self.jobid,
                                     self.basepath,self.jobid),shell=True,
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             cmd.wait(timeout=10)

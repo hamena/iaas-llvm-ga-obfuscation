@@ -11,7 +11,6 @@ config_offspring_population_size = 10
 config_probability_mutation = 0.1
 config_probability_crossover = 0.3
 config_solution_length = 10
-config_assambly_lines = True # True means fitness = code lines, False means fitness = runtime
 config_dictionary_preloaded = False # True for load an initial dictionary
 config_verbose = True
 
@@ -24,7 +23,6 @@ if __name__ == '__main__':
                                  offspring_population_size=config_offspring_population_size,
                                  solution_length=config_solution_length,
                                  dictionary_preloaded=False,
-                                 assambly_lines=config_assambly_lines,
                                  verbose=config_verbose)
 
     # Algorithm set
