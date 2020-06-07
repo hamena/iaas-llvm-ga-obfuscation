@@ -33,12 +33,10 @@ class LlvmUtils():
                 generator: str="original_merged_generator.sh", source: str="polybench_small_original.bc",
                 runs: int=1, jobid: str="", useperf: bool=True):
         self.llvmpath = llvmpath
-        llvmpath += "/" if llvmpath[-1] != '/' else ""
         self.clangexe = clangexe
         self.optexe = optexe
         self.llcexe = llcexe
         self.basepath = basepath
-        basepath += "/" if basepath[-1] != '/' else ""
         self.benchmark = benchmark
         self.generator = generator
         self.source = source
