@@ -13,7 +13,7 @@ class llvmMultiobjetiveProblem(IntegerProblem):
                  dictionary_preloaded: bool = True, dictionary_name: str = 'llvm_dictionary.data'):
 
         self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe="clang-10", optexe="opt-10", llcexe="llc-10", 
-                            source="polybench_small/polybench_small_original.bc" ,jobid='llvm_multiobjetive', useperf=False)
+                            source="polybench_small/polybench_small_original.bc" ,jobid='llvm_multiobjetive')
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]

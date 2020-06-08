@@ -25,25 +25,21 @@ class LlvmUtils():
     source = name for benchmark IR code
     runs = how many times should the benchmark be run
     jobid = job identifier code
-    useperf = True means use perf for runtime so perf has to be installed
     '''
 
     def __init__(self, llvmpath: str="/llvm/bin/", clangexe: str="clang", optexe: str="opt", 
                 llcexe: str="llc", basepath: str="./", benchmark: str = "polybench_small",
-                generator: str="original_merged_generator.sh", source: str="polybench_small_original.bc",
-                runs: int=1, jobid: str="", useperf: bool=True):
+                source: str="polybench_small_original.bc", runs: int=1, jobid: str=""):
         self.llvmpath = llvmpath
         self.clangexe = clangexe
         self.optexe = optexe
         self.llcexe = llcexe
         self.basepath = basepath
         self.benchmark = benchmark
-        self.generator = generator
         self.source = source
         self.runs = runs
         self.jobid = jobid
         self.onebyones = 0
-        self.useperf = useperf
 
     @staticmethod
     def get_passes() -> list:
@@ -65,13 +61,6 @@ class LlvmUtils():
                       "-constmerge","-loop-sink","-instsimplify","-div-rem-pairs"]
         return all_passes
 
-    # To convert the original benchmark into LLVM IR
-    def benchmark_link(self) -> None:
-        os.chdir("{}{}/".format(self.basepath,self.benchmark))
-        os.system("./{} {}".format(self.generator,self.llvmpath))
-        copyfile("{}".format(self.source),"../{}".format(self.source))
-        os.chdir("../")
-
     # To get the runtime
     def get_runtime(self,passes: str = "-O3") -> float:
         if (os.path.exists("{}optimized_{}.bc".format(self.basepath,self.jobid))):
@@ -82,17 +71,11 @@ class LlvmUtils():
             os.system("{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
                        self.llvmpath,self.clangexe,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
                        self.basepath,self.jobid,self.basepath,self.jobid)))
-            if self.useperf:
-                cmd = subprocess.check_output("{}runtimes.sh {}exec_{}.o {}".format(
-                          self.basepath,self.basepath,self.jobid,self.runs),shell=True)
-                runtimes = np.array(cmd.decode("utf-8")[:-1].split(","),dtype=float)
-                average = np.median(runtimes)
-            else:
-                for _ in range(self.runs):
-                    start_time = time.time()
-                    os.system("{}exec_{}.o".format(self.basepath,self.jobid))
-                    average += time.time() - start_time
-                average /= self.runs
+            for _ in range(self.runs):
+                start_time = time.time()
+                os.system("{}exec_{}.o".format(self.basepath,self.jobid))
+                average += time.time() - start_time
+            average /= self.runs
         else:
             average = sys.maxsize
         return average
