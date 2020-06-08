@@ -17,9 +17,9 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
-        self.obj_directions = [self.MINIMIZE, self.MAXIMIZE]
-        self.obj_labels = ['runtime', 'codelines']
-        self.number_of_objectives = 2
+        self.obj_labels = ['runtime', 'codelines', 'test']
+        self.obj_directions = [self.MINIMIZE, self.MAXIMIZE, self.MINIMIZE]
+        self.number_of_objectives = 3
         self.number_of_constraints = 0
         self.is_minimization = is_minimization
         self.max_evaluations = max_evaluations
@@ -56,12 +56,14 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             for i in range(self.number_of_variables):
                 passes += " {}".format(self.llvm.get_passes()[solution.variables[i]])
 
-            solution.objectives[0] = self.llvm.get_codelines(passes=passes)
-            solution.objectives[1] = self.llvm.get_runtime(passes=passes)
+            solution.objectives[0] = self.llvm.get_runtime(passes=passes)
+            solution.objectives[1] = self.llvm.get_codelines(passes=passes)
+            solution.objectives[2] = self.llvm.get_test()
             self.dictionary.update({key: solution.objectives})
         else:
             solution.objectives[0] = value[0]
             solution.objectives[1] = value[1]
+            solution.objectives[2] = value[2]
         if self.verbose: # En este bloque hay que controlar objectives[0] y objectives[1]
             strfitness=f"{solution.objectives}'"
             print("evaluated solution {:3} from epoch {:3} : variables = {}, fitness = {}"\

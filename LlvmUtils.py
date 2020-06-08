@@ -61,6 +61,14 @@ class LlvmUtils():
                       "-constmerge","-loop-sink","-instsimplify","-div-rem-pairs"]
         return all_passes
 
+    def get_test(self) -> int:
+        result = 0
+        self.toAssembly()
+        with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
+            for line in file.readlines():
+                result += line.count("Loop")
+        return result
+
     # To get the runtime
     def get_runtime(self,passes: str = "-O3") -> float:
         if (os.path.exists("{}optimized_{}.bc".format(self.basepath,self.jobid))):
@@ -81,10 +89,7 @@ class LlvmUtils():
         return average
 
     # To get the number of lines of code
-    def get_codelines(self,passes: str = '-O3',source: str = "optimized.bc",
-                  output: str = "optimized.ll") -> int:
-        source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
-        output = "{}{}".format(self.basepath,output.replace(".bc","_{}.bc".format(self.jobid)))
+    def get_codelines(self,passes: str = '-O3') -> int:
         if self.toIR(passes):
             self.toAssembly()
             with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
