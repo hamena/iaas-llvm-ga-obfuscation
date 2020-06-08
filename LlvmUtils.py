@@ -61,12 +61,21 @@ class LlvmUtils():
                       "-constmerge","-loop-sink","-instsimplify","-div-rem-pairs"]
         return all_passes
 
-    def get_test(self) -> int:
+    def get_conditional_jumps(self) -> int:
         result = 0
         self.toAssembly()
         with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
             for line in file.readlines():
-                result += line.count("Loop")
+                result += line.count("jl")
+                result += line.count("jge")
+        return result
+
+    def get_jmp(self) -> int:
+        result = 0
+        self.toAssembly()
+        with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
+            for line in file.readlines():
+                result += line.count("jmp")
         return result
 
     # To get the runtime
