@@ -63,7 +63,6 @@ class LlvmUtils():
 
     def get_conditional_jumps(self) -> int:
         result = 0
-        self.toAssembly()
         with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
             for line in file.readlines():
                 result += line.count("jl")
@@ -72,7 +71,6 @@ class LlvmUtils():
 
     def get_jmp(self) -> int:
         result = 0
-        self.toAssembly()
         with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
             for line in file.readlines():
                 result += line.count("jmp")
@@ -84,27 +82,18 @@ class LlvmUtils():
             os.remove("{}optimized_{}.bc".format(self.basepath,self.jobid))
         copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
         average = 0.0
-        if self.toIR(passes):
-            os.system("{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
-                       self.llvmpath,self.clangexe,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
-                       self.basepath,self.jobid,self.basepath,self.jobid)))
-            for _ in range(self.runs):
-                start_time = time.time()
-                os.system("{}exec_{}.o".format(self.basepath,self.jobid))
-                average += time.time() - start_time
-            average /= self.runs
-        else:
-            average = sys.maxsize
+        for _ in range(self.runs):
+            start_time = time.time()
+            os.system("{}exec_{}.o".format(self.basepath,self.jobid))
+            average += time.time() - start_time
+        average /= self.runs
         return average
 
     # To get the number of lines of code
-    def get_codelines(self,passes: str = '-O3') -> int:
-        if self.toIR(passes):
-            self.toAssembly()
-            with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
-                result = len(file.readlines())
-        else:
-            result = 0
+    def get_codelines(self) -> int:
+        result = 0
+        with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
+            result = len(file.readlines())
         return result
 
     # To apply transformations
@@ -118,12 +107,17 @@ class LlvmUtils():
             result = self.onebyone(passes)
         return result
 
+    def toExecutable(self):
+        os.system("{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
+            self.llvmpath,self.clangexe,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
+            self.basepath,self.jobid,self.basepath,self.jobid)))
+
     # To transform from LLVM IR to assembly code
     def toAssembly(self, source: str = "optimized.bc", output: str = "optimized.ll"):
         source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
         output = "{}{}".format(self.basepath,output.replace(".ll","_{}.ll".format(self.jobid)))
         os.system("{}{} {}{} -o {}{}".format(self.llvmpath,self.llcexe,
-                  self.basepath,source,self.basepath,output))
+            self.basepath,source,self.basepath,output))
 
     # To apply transformations in one line
     def allinone(self, passes: str = '-O3') -> bool:

@@ -32,12 +32,14 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.verbose = verbose
         self.dictionary_preloaded = dictionary_preloaded
         if self.dictionary_preloaded:
-            with open("llvm_dictionary.data","r") as file:
-                lines = file.readlines()
-                for line in lines:
-                    key = "["+"{}".format(line[:16])+"]"
-                    value = "{}".format(line[17:])[:-1]
-                    self.dictionary.update({key: value})
+            with open(f"{dictionary_name}","r") as file:
+                for line in file.readlines():
+                    line = line[:-1]
+                    keyvalue = line.split(sep=";")
+                    print(f"line: {line}")
+                    print(f"key: {keyvalue[0]}")
+                    print(f"value: {keyvalue[1]}")
+                    self.dictionary.update({keyvalue[0]:keyvalue[1]})
 
     def get_name(self):
         return 'Llvm Multiobjetive Problem'
@@ -56,8 +58,14 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             for i in range(self.number_of_variables):
                 passes += " {}".format(self.llvm.get_passes()[solution.variables[i]])
 
+            # Optimize and generate resources
+            self.llvm.toIR(passes=passes)
+            self.llvm.toExecutable()
+            self.llvm.toAssembly()
+
+            # Get measures
             solution.objectives[0] = self.llvm.get_runtime(passes=passes)
-            solution.objectives[1] = self.llvm.get_codelines(passes=passes)
+            solution.objectives[1] = self.llvm.get_codelines()
             solution.objectives[2] = self.llvm.get_jmp()
             solution.objectives[3] = self.llvm.get_conditional_jumps()
             self.dictionary.update({key: solution.objectives})
@@ -94,7 +102,5 @@ class llvmMultiobjetiveProblem(IntegerProblem):
                         self.offspring_population_size, self.phenotype*self.epoch)
             with open(filename,"w") as file:
                 for keys,values in self.dictionary.items():
-                    key = '{}'.format(keys).replace("[","").replace("]","")
-                    key = '{}'.format(key).replace(", ",",")
-                    file.write('{},{}\n'.format(key,values))
+                    file.write('{};{}\n'.format(keys,values))
         return met
