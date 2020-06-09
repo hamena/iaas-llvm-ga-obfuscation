@@ -5,13 +5,14 @@ from jmetal.util.solution import get_non_dominated_solutions
 from llvmMultiobjetiveProblem import llvmMultiobjetiveProblem
 
 ### SETTINGS
-config_max_evaluations = 200
+config_max_evaluations = 1000
 config_population_size = 10
 config_offspring_population_size = 10
 config_probability_mutation = 0.1
 config_probability_crossover = 0.3
 config_solution_length = 10
 config_dictionary_preloaded = False # True for load an initial dictionary
+config_dictionary_name = "dictionary.data"
 config_verbose = True
 
 
@@ -22,8 +23,8 @@ if __name__ == '__main__':
                                  population_size=config_population_size,
                                  offspring_population_size=config_offspring_population_size,
                                  solution_length=config_solution_length,
-                                 dictionary_preloaded=True,
-                                 dictionary_name="dictionary.data",
+                                 dictionary_preloaded=config_dictionary_preloaded,
+                                 dictionary_name=config_dictionary_name,
                                  verbose=config_verbose)
 
     # Algorithm set
