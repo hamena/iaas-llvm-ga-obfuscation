@@ -75,7 +75,7 @@ class LlvmUtils():
         copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
         average = 0.0
         if self.toIR(passes):
-            os.system("{}clang-10 -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
+            os.system("{}clang -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
                        self.llvmpath,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
                        self.basepath,self.jobid,self.basepath,self.jobid)))
             if self.useperf:
@@ -121,13 +121,13 @@ class LlvmUtils():
     def toAssembly(self, source: str = "optimized.bc", output: str = "optimized.ll"):
         source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
         output = "{}{}".format(self.basepath,output.replace(".ll","_{}.ll".format(self.jobid)))
-        os.system("{}llc-10 {}{} -o {}{}".format(self.llvmpath,
+        os.system("{}llc {}{} -o {}{}".format(self.llvmpath,
                   self.basepath,source,self.basepath,output))
 
     # To apply transformations in one line
     def allinone(self, passes: str = '-O3') -> bool:
         result = True
-        cmd = subprocess.Popen("{}opt-10 {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
+        cmd = subprocess.Popen("{}opt {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
                                 self.llvmpath,passes,self.basepath,self.jobid,self.basepath,
                                 self.jobid),shell=True,stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL)
@@ -143,7 +143,7 @@ class LlvmUtils():
         passeslist = passes.split(' ')
         self.onebyones += 1
         for llvm_pass in passeslist:
-            cmd = subprocess.Popen("{}opt-10 {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
+            cmd = subprocess.Popen("{}opt {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
                                     self.llvmpath,llvm_pass, self.basepath,self.jobid,
                                     self.basepath,self.jobid),shell=True,
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
