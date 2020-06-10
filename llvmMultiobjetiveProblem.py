@@ -57,8 +57,8 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             for i in range(self.number_of_variables):
                 passes += " {}".format(self.llvm.get_passes()[solution.variables[i]])
 
-            solution.objectives[0] = self.llvm.get_codelines(passes=passes)
-            solution.objectives[1] = self.llvm.get_runtime(passes=passes)
+            solution.objectives[0] = self.llvm.get_runtime(passes=passes)
+            solution.objectives[1] = self.llvm.get_codelines(passes=passes)
             self.dictionary.update({key: solution.objectives})
         else:
             solution.objectives[0] = value[0]
