@@ -64,7 +64,7 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             self.llvm.toAssembly()
 
             # Get measures
-            solution.objectives[0] = self.llvm.get_runtime(passes=passes)
+            solution.objectives[0] = self.llvm.get_runtime()
             solution.objectives[1] = self.llvm.get_codelines()
             solution.objectives[2] = self.llvm.get_jmp()
             solution.objectives[3] = self.llvm.get_conditional_jumps()

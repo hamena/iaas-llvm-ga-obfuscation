@@ -77,7 +77,7 @@ class LlvmUtils():
         return result
 
     # To get the runtime
-    def get_runtime(self,passes: str = "-O3") -> float:
+    def get_runtime(self) -> float:
         if (os.path.exists("{}optimized_{}.bc".format(self.basepath,self.jobid))):
             os.remove("{}optimized_{}.bc".format(self.basepath,self.jobid))
         copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
