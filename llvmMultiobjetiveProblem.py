@@ -84,9 +84,6 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         
         return solution
 
-    def get_onebyone(self):
-        return self.llvm.get_onebyone()
-
     ### FOR TERMINATION CRITERION ###
     def update(self, *args, **kwargs):
         self.evaluations = kwargs['EVALUATIONS']

@@ -96,61 +96,51 @@ class LlvmUtils():
             result = len(file.readlines())
         return result
 
-    # To apply transformations
+    # original.bc --> optimized.bc
     def toIR(self, passes: str = '-O3') -> bool:
-        if (os.path.exists("{}optimized_{}.bc".format(self.basepath,self.jobid))):
-            os.remove("{}optimized_{}.bc".format(self.basepath,self.jobid))
-        copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
-        result = self.allinone(passes)
-        if not result:
-            copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
-            result = self.onebyone(passes)
-        return result
+        source = "{}optimized_{}.bc".format(self.basepath,self.jobid)
+        output = source
+        if (os.path.exists(source)):
+            os.remove(source)
+        copyfile("{}{}".format(self.basepath,self.source), source)
+        resultcode = self.opt(source, output, passes)
+        
+        if resultcode: raise Exception(f"opt failed ({resultcode}): {passes}")
 
-    def toExecutable(self):
-        os.system("{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
-            self.llvmpath,self.clangexe,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
-            self.basepath,self.jobid,self.basepath,self.jobid)))
+    # optimized.bc --> optimized.o
+    def toExecutable(self): 
+        source = "{}optimized_{}.bc".format(self.basepath, self.jobid)
+        output = "{}exec_{}.o".format(self.basepath, self.jobid)
+        resultcode = self.clang(source, output)
 
-    # To transform from LLVM IR to assembly code
+        if resultcode: raise Exception(f"clang failed ({resultcode}):\n\tsource: '{source}'\n\toutput: '{output}'")
+
+    # optimized.bc --> optimized.ll
     def toAssembly(self, source: str = "optimized.bc", output: str = "optimized.ll"):
         source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
         output = "{}{}".format(self.basepath,output.replace(".ll","_{}.ll".format(self.jobid)))
-        os.system("{}{} {}{} -o {}{}".format(self.llvmpath,self.llcexe,
-            self.basepath,source,self.basepath,output))
+        resultcode = self.llc(source, output)
+
+        if resultcode: raise Exception(f"llc failed ({resultcode}):\n\tsource: '{source}'\n\toutput: '{output}'")
 
     # To apply transformations in one line
-    def allinone(self, passes: str = '-O3') -> bool:
-        result = True
-        cmd = subprocess.Popen("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
+    def opt(self, source: str, output: str, passes: str) -> bool:
+        completed = subprocess.run("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
             self.llvmpath,self.optexe,passes,self.basepath,self.jobid,self.basepath,
-            self.jobid),shell=True,stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
-        cmd.wait(timeout=20)
-        if cmd.returncode != 0:
-            cmd.kill()
-            result = False
-        return result
-    
-    # To apply transformations one by one
-    def onebyone(self, passes: str = '-O3') -> bool:
-        result = True
-        passeslist = passes.split(' ')
-        self.onebyones += 1
-        for llvm_pass in passeslist:
-            cmd = subprocess.Popen("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                self.llvmpath,self.optexe,llvm_pass, self.basepath,self.jobid,
-                self.basepath,self.jobid),shell=True,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            cmd.wait(timeout=10)
-            if cmd.returncode != 0:
-                cmd.kill()
-                result = False
-        return result
-        
-    # To get the number of time onebyone is run
-    def get_onebyone(self):
-        return self.onebyones
+            self.jobid),shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        return completed.returncode
+
+    def llc(self, source: str, output: str):
+        completed = subprocess.run("{}{} {}{} -o {}{}"\
+            .format(self.llvmpath,self.llcexe, self.basepath,source,self.basepath,output), 
+            shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return completed.returncode
+
+    def clang(self, source: str, output: str):
+        completed = subprocess.run("{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes -Xclang -disable-O0-optnone {} -o {}"\
+            .format(self.llvmpath, self.clangexe, source, output),
+            shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return completed.returncode
 
     # To add a file to the output file
     @staticmethod

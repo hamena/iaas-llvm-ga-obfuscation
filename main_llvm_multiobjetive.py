@@ -52,7 +52,6 @@ if __name__ == '__main__':
         file.write(f'\n\tProbability mutation: {config_probability_mutation}')
         file.write(f'\n\tProbability crossover: {config_probability_crossover}')
         file.write(f'\n\tSolution length: {config_solution_length}')
-        file.write(f'\n\tOpt executed one by one: {problem.get_onebyone()} times')
         file.write('\nResults:')
         for sol in get_non_dominated_solutions(algorithm.get_result()):
             file.write(f'\n\t\t{sol.variables}\t\t{sol.objectives}')
@@ -67,7 +66,6 @@ if __name__ == '__main__':
     print(f'\tProbability mutation: {config_probability_mutation}')
     print(f'\tProbability crossover: {config_probability_crossover}')
     print(f'\tSolution length: {config_solution_length}')
-    print(f'\tOpt executed one by one: {problem.get_onebyone()} times')
     print(f'\nResults:')
     for sol in get_non_dominated_solutions(algorithm.get_result()):
         print(f'\t\t{sol.variables}\t\t{sol.objectives}')
