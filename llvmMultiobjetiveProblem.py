@@ -34,11 +34,8 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         if self.dictionary_preloaded:
             with open(f"{dictionary_name}","r") as file:
                 for line in file.readlines():
-                    line = line[:-1]
+                    line = line[:-1] # \n
                     keyvalue = line.split(sep=";")
-                    print(f"line: {line}")
-                    print(f"key: {keyvalue[0]}")
-                    print(f"value: {keyvalue[1]}")
                     self.dictionary.update({keyvalue[0]:keyvalue[1]})
 
     def get_name(self):
@@ -50,13 +47,13 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         if self.phenotype%(limit[0]+1) == 0:
             self.epoch += 1
             self.phenotype = 1
-        key = "{}".format(solution.variables)
+        key = f"{solution.variables}"
         value = self.dictionary.get(key)
         if value == None:
             # Decoding
             passes = ""
             for i in range(self.number_of_variables):
-                passes += " {}".format(self.llvm.get_passes()[solution.variables[i]])
+                passes += f" {self.llvm.get_passes()[solution.variables[i]]}"
 
             # Optimize and generate resources
             self.llvm.toIR(passes=passes)
@@ -70,20 +67,21 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             solution.objectives[3] = self.llvm.get_conditional_jumps()
             self.dictionary.update({key: solution.objectives})
         else:
+            # Get stored value
             solution.objectives[0] = value[0]
             solution.objectives[1] = value[1]
             solution.objectives[2] = value[2]
             solution.objectives[3] = value[3]
+        
         if self.verbose:
-            strfitness=f"{solution.objectives}'"
             print("evaluated solution {:3} from epoch {:3} : variables = {}, fitness = {}"\
-                   .format(self.phenotype,self.epoch,solution.variables,strfitness))
+                .format(self.phenotype,self.epoch,solution.variables,solution.objectives))
             if self.phenotype == 1 and self.epoch == 1 :
                 with open(f"solutions_{self.population_size}_{self.offspring_population_size}.data","w") as file:
-                    file.write("{} {} {} {}\n".format("iter","epoch","variables","fitness"))
+                    file.write("iter epoch variables fitness\n")
             with open(f"solutions_{self.population_size}_{self.offspring_population_size}.data","a") as file:
-                file.write("{} {} {} {}\n"\
-                   .format(self.phenotype,self.epoch,solution.variables,strfitness))
+                file.write(f"{self.phenotype} {self.epoch} {solution.variables} {solution.objectives}\n")
+        
         return solution
 
     def get_onebyone(self):

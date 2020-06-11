@@ -123,9 +123,9 @@ class LlvmUtils():
     def allinone(self, passes: str = '-O3') -> bool:
         result = True
         cmd = subprocess.Popen("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                                self.llvmpath,self.optexe,passes,self.basepath,self.jobid,self.basepath,
-                                self.jobid),shell=True,stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)
+            self.llvmpath,self.optexe,passes,self.basepath,self.jobid,self.basepath,
+            self.jobid),shell=True,stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
         cmd.wait(timeout=20)
         if cmd.returncode != 0:
             cmd.kill()
@@ -139,9 +139,9 @@ class LlvmUtils():
         self.onebyones += 1
         for llvm_pass in passeslist:
             cmd = subprocess.Popen("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                                    self.llvmpath,self.optexe,llvm_pass, self.basepath,self.jobid,
-                                    self.basepath,self.jobid),shell=True,
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                self.llvmpath,self.optexe,llvm_pass, self.basepath,self.jobid,
+                self.basepath,self.jobid),shell=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             cmd.wait(timeout=10)
             if cmd.returncode != 0:
                 cmd.kill()
@@ -164,21 +164,21 @@ class LlvmUtils():
     @staticmethod
     def fileToDictionary(input_: str, dic: list):
         with open(input_,"r") as file:
-                lines = file.readlines()
-                for line in lines:
-                    index = line.rfind(',')
-                    key = "["+"{}".format(line[:index])+"]"
-                    value = "{}".format(line[index+1:])[:-1]
-                    dic.update({key: value})
+            lines = file.readlines()
+            for line in lines:
+                index = line.rfind(',')
+                key = "["+"{}".format(line[:index])+"]"
+                value = "{}".format(line[index+1:])[:-1]
+                dic.update({key: value})
 
     # Dictionary to file
     @staticmethod
     def dictionaryToFile(filename: str, dic: list):
         with open(filename,"w") as file:
-                for keys,values in dic.items():
-                    key = '{}'.format(keys).replace("[","").replace("]","")
-                    key = '{}'.format(key).replace(", ",",")
-                    file.write('{},{}\n'.format(key,values))
+            for keys,values in dic.items():
+                key = '{}'.format(keys).replace("[","").replace("]","")
+                key = '{}'.format(key).replace(", ",",")
+                file.write('{},{}\n'.format(key,values))
 
     # To encode file from passes to integers
     @staticmethod

@@ -5,7 +5,7 @@ from jmetal.util.solution import get_non_dominated_solutions
 from llvmMultiobjetiveProblem import llvmMultiobjetiveProblem
 
 ### SETTINGS
-config_max_evaluations = 1000
+config_max_evaluations = 30
 config_population_size = 10
 config_offspring_population_size = 10
 config_probability_mutation = 0.1
@@ -20,12 +20,12 @@ if __name__ == '__main__':
 
     # Problem set
     problem = llvmMultiobjetiveProblem(max_evaluations=config_max_evaluations,
-                                 population_size=config_population_size,
-                                 offspring_population_size=config_offspring_population_size,
-                                 solution_length=config_solution_length,
-                                 dictionary_preloaded=config_dictionary_preloaded,
-                                 dictionary_name=config_dictionary_name,
-                                 verbose=config_verbose)
+        population_size=config_population_size,
+        offspring_population_size=config_offspring_population_size,
+        solution_length=config_solution_length,
+        dictionary_preloaded=config_dictionary_preloaded,
+        dictionary_name=config_dictionary_name,
+        verbose=config_verbose)
 
     # Algorithm set
     algorithm = NSGAII(
@@ -56,9 +56,6 @@ if __name__ == '__main__':
         file.write('\nResults:')
         for sol in get_non_dominated_solutions(algorithm.get_result()):
             file.write(f'\n\t\t{sol.variables}\t\t{sol.objectives}')
-        
-        #file.write(f'\n\tBest solution: {algorithm.get_result().variables}')
-        #file.write(f'\n\tFitness: {algorithm.get_result().objectives[0]}\t{algorithm.get_result().objectives[1]}')
 
     print('\nSettings:')
     print(f'\tAlgorithm: {algorithm.get_name()}')
