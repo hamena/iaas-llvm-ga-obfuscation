@@ -3,14 +3,15 @@ from jmetal.util.termination_criterion import StoppingByEvaluations
 from jmetal.operator import SBXCrossover, RandomSolutionSelection, IntegerPolynomialMutation
 from jmetal.util.solution import get_non_dominated_solutions
 from llvmMultiobjetiveProblem import llvmMultiobjetiveProblem
+from jmetal.lab.visualization import Plot
 
 ### SETTINGS
-config_max_evaluations = 30
+config_max_evaluations = 100
 config_population_size = 10
 config_offspring_population_size = 10
 config_probability_mutation = 0.1
 config_probability_crossover = 0.3
-config_solution_length = 10
+config_solution_length = 20
 config_dictionary_preloaded = False # True for load an initial dictionary
 config_dictionary_name = "dictionary.data"
 config_verbose = True
@@ -69,3 +70,9 @@ if __name__ == '__main__':
     print(f'\nResults:')
     for sol in get_non_dominated_solutions(algorithm.get_result()):
         print(f'\t\t{sol.variables}\t\t{sol.objectives}')
+
+    nds = get_non_dominated_solutions(algorithm.get_result())
+    plot_front = Plot(title='Pareto front approximation', axis_labels=['x', 'y'])
+    #plot_front.plot(nds, label='NSGAII')
+    #plot_front = Plot(title='Pareto front approximation', axis_labels=['runtime', 'codelines', 'tags', 'jmps', 'cond_jmps'])
+    plot_front.plot(nds, normalize=True, filename='output', format='eps')
