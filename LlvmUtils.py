@@ -39,7 +39,6 @@ class LlvmUtils():
         self.source = source
         self.runs = runs
         self.jobid = jobid
-        self.onebyones = 0
 
     @staticmethod
     def get_passes() -> list:
@@ -74,6 +73,13 @@ class LlvmUtils():
         with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
             for line in file.readlines():
                 result += line.count("jmp")
+        return result
+
+    def get_tags(self) -> int:
+        result = 0
+        with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
+            for line in file.readlines():
+                result += line[0]!='\t' and line[0]!='#'
         return result
 
     # To get the runtime
@@ -123,7 +129,6 @@ class LlvmUtils():
 
         if resultcode: raise Exception(f"llc failed ({resultcode}):\n\tsource: '{source}'\n\toutput: '{output}'")
 
-    # To apply transformations in one line
     def opt(self, source: str, output: str, passes: str) -> bool:
         completed = subprocess.run("{}{} {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
             self.llvmpath,self.optexe,passes,self.basepath,self.jobid,self.basepath,
