@@ -4,6 +4,7 @@ from jmetal.core.problem import IntegerProblem
 from jmetal.core.solution import IntegerSolution
 
 from LlvmUtils import LlvmUtils
+from LlvmUtils import LlvmFiles
 
 class llvmMultiobjetiveProblem(IntegerProblem):
 
@@ -12,8 +13,8 @@ class llvmMultiobjetiveProblem(IntegerProblem):
                  population_size = int, offspring_population_size = int, verbose: bool = True, upper_bound : int = 86, 
                  dictionary_preloaded: bool = True, dictionary_name: str = 'llvm_dictionary.data'):
 
-        self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe="clang-10", optexe="opt-10", llcexe="llc-10", 
-                            source="polybench_small/polybench_small_original.bc" ,jobid='llvm_multiobjetive')
+        self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe='clang-10', optexe='opt-10', llcexe='llc-10')
+        self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', jobid='llvm_multiobjetive')
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
@@ -56,16 +57,16 @@ class llvmMultiobjetiveProblem(IntegerProblem):
                 passes += f" {self.llvm.get_passes()[solution.variables[i]]}"
 
             # Optimize and generate resources
-            self.llvm.toIR(passes=passes)
-            self.llvm.toExecutable()
-            self.llvm.toAssembly()
+            self.llvm.toIR(self.llvmfiles.get_original_bc(), self.llvmfiles.get_optimized_bc(), passes=passes)
+            self.llvm.toExecutable(self.llvmfiles.get_optimized_bc(), self.llvmfiles.get_optimized_exe())
+            self.llvm.toAssembly(self.llvmfiles.get_optimized_bc(), self.llvmfiles.get_optimized_ll())
 
             # Get measures
-            solution.objectives[0] = self.llvm.get_runtime()
-            solution.objectives[1] = self.llvm.get_codelines()
-            solution.objectives[2] = self.llvm.get_tags()
-            solution.objectives[3] = self.llvm.get_jmp()
-            solution.objectives[4] = self.llvm.get_conditional_jumps()
+            solution.objectives[0] = self.llvm.get_runtime(self.llvmfiles.get_optimized_exe())
+            solution.objectives[1] = self.llvm.get_codelines(self.llvmfiles.get_optimized_ll())
+            solution.objectives[2] = self.llvm.get_tags(self.llvmfiles.get_optimized_ll())
+            solution.objectives[3] = self.llvm.get_jmp(self.llvmfiles.get_optimized_ll())
+            solution.objectives[4] = self.llvm.get_conditional_jumps(self.llvmfiles.get_optimized_ll())
             self.dictionary.update({key: solution.objectives})
         else:
             # Get stored value

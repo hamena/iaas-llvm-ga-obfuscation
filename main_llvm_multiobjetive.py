@@ -76,3 +76,4 @@ if __name__ == '__main__':
     #plot_front.plot(nds, label='NSGAII')
     #plot_front = Plot(title='Pareto front approximation', axis_labels=['runtime', 'codelines', 'tags', 'jmps', 'cond_jmps'])
     plot_front.plot(nds, normalize=True, filename='output', format='eps')
+    
