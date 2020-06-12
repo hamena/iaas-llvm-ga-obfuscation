@@ -8,10 +8,7 @@
 
 """
 
-
-import os
 import subprocess
-import time
 from shutil import copy as copyfile
 import sys
 import numpy as np
@@ -50,45 +47,6 @@ class LlvmUtils():
                       "-slp-vectorizer","-transform-warning","-alignment-from-assumptions","-strip-dead-prototypes",
                       "-constmerge","-loop-sink","-instsimplify","-div-rem-pairs"]
         return all_passes
-
-    def get_conditional_jumps(self, source_ll: str) -> int:
-        result = 0
-        with open(source_ll,'r') as file:
-            for line in file.readlines():
-                result += line.count("jl")
-                result += line.count("jge")
-        return result
-
-    def get_jmp(self, source_ll: str) -> int:
-        result = 0
-        with open(source_ll, 'r') as file:
-            for line in file.readlines():
-                result += line.count("jmp")
-        return result
-
-    def get_tags(self, source_ll: str) -> int:
-        result = 0
-        with open(source_ll,'r') as file:
-            for line in file.readlines():
-                result += line[0]!='\t' and line[0]!='#'
-        return result
-
-    # To get the number of lines of code
-    def get_codelines(self, source_ll: str) -> int:
-        result = 0
-        with open(source_ll,'r') as file:
-            result = len(file.readlines())
-        return result
-
-    # To get the runtime
-    def get_runtime(self, source_exe: str) -> float:
-        average = 0.0
-        for _ in range(self.runs):
-            start_time = time.time()
-            os.system(source_exe)
-            average += time.time() - start_time
-        average /= self.runs
-        return average
 
     # original.bc --> optimized.bc
     def toIR(self, source: str, output: str, passes: str = '-O3') -> bool:

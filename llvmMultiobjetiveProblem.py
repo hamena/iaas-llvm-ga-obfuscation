@@ -5,6 +5,7 @@ from jmetal.core.solution import IntegerSolution
 
 from LlvmUtils import LlvmUtils
 from LlvmUtils import LlvmFiles
+from Evaluator import Evaluator
 
 class llvmMultiobjetiveProblem(IntegerProblem):
 
@@ -15,6 +16,7 @@ class llvmMultiobjetiveProblem(IntegerProblem):
 
         self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe='clang-10', optexe='opt-10', llcexe='llc-10')
         self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', jobid='llvm_multiobjetive')
+        self.evaluator = Evaluator(runs=1)
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
@@ -62,12 +64,14 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             self.llvm.toAssembly(self.llvmfiles.get_optimized_bc(), self.llvmfiles.get_optimized_ll())
 
             # Get measures
-            solution.objectives[0] = self.llvm.get_runtime(self.llvmfiles.get_optimized_exe())
-            solution.objectives[1] = self.llvm.get_codelines(self.llvmfiles.get_optimized_ll())
-            solution.objectives[2] = self.llvm.get_tags(self.llvmfiles.get_optimized_ll())
-            solution.objectives[3] = self.llvm.get_jmp(self.llvmfiles.get_optimized_ll())
-            solution.objectives[4] = self.llvm.get_conditional_jumps(self.llvmfiles.get_optimized_ll())
+            self.evaluator.evaluate(source_ll=self.llvmfiles.get_optimized_ll(), source_exe=self.llvmfiles.get_optimized_exe())
+            solution.objectives[0] = self.evaluator.get_runtime()
+            solution.objectives[1] = self.evaluator.get_codelines()
+            solution.objectives[2] = self.evaluator.get_tags()
+            solution.objectives[3] = self.evaluator.get_unconditional_jmps()
+            solution.objectives[4] = self.evaluator.get_conditional_jmps()
             self.dictionary.update({key: solution.objectives})
+            self.evaluator.reset()
         else:
             # Get stored value
             solution.objectives[0] = value[0]
