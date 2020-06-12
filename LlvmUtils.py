@@ -1,10 +1,10 @@
 
 """
-.. module:: llvmutils
+.. module:: LlvmUtils
    :platform: Unix, Windows
    :synopsis: Offers tools to use the llvm infrastructure 9.0.0
 
-.. moduleauthor:: Juan Carlos de la Torre <juan.detorre@uca.es>
+.. moduleauthor:: Juan Carlos de la Torre <juan.detorre@uca.es>, Jose Crespo Guerrero <jose.crespoguerrero@uca.es>
 
 """
 
@@ -18,15 +18,13 @@ class LlvmUtils():
     llvmpath: llvm path
     basepath: work path
     generator: script to merge all benchmark suite
-    runs: how many times should the benchmark be run
     '''
     def __init__(self, llvmpath: str="/llvm/bin/", clangexe: str="clang", optexe: str="opt", 
-                llcexe: str="llc", runs: int=1):
+                llcexe: str="llc"):
         self.llvmpath = llvmpath
         self.clangexe = clangexe
         self.optexe = optexe
         self.llcexe = llcexe
-        self.runs = runs
 
     @staticmethod
     def get_passes() -> list:

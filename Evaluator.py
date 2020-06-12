@@ -1,4 +1,13 @@
 
+"""
+.. module:: Evaluator
+   :platform: Unix, Windows
+   :synopsis: Takes measures from a executable/assembly file
+
+.. moduleauthor:: Jose Crespo Guerrero <jose.crespoguerrero@alum.uca.es>
+
+"""
+
 import os
 import time
 
@@ -59,8 +68,8 @@ class Evaluator():
     def get_ratio_tags(self) -> float:
         return self.tags / self.codelines
 
-    def get_ratio_unconditional_jmp(self) -> float:
+    def get_ratio_unconditional_jmps(self) -> float:
         return self.unconditional_jmps / self.codelines
 
-    def get_ratio_conditional_jmp(self) -> float:
+    def get_ratio_conditional_jmps(self) -> float:
         return self.conditional_jmps / self.codelines
