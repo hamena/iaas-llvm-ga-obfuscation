@@ -49,7 +49,10 @@ class LlvmUtils():
     # original.bc --> optimized.bc
     def toIR(self, source: str, output: str, passes: str = '-O3') -> bool:
         resultcode = self.opt(source, output, passes)
-        if resultcode: raise Exception(f"opt failed ({resultcode}): {passes}")
+        if resultcode:
+            for p in passes:
+                resultcode = self.opt(source, output, p)
+                if resultcode: raise Exception(f"opt onebyone failed ({resultcode}): {passes}")
 
     # optimized.bc --> optimized.o
     def toExecutable(self, source: str, output: str): 

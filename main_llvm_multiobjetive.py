@@ -4,28 +4,31 @@ from jmetal.operator import SBXCrossover, RandomSolutionSelection, IntegerPolyno
 from jmetal.util.solution import get_non_dominated_solutions
 from llvmMultiobjetiveProblem import llvmMultiobjetiveProblem
 from jmetal.lab.visualization import Plot
+import sys
 
 ### SETTINGS
-config_max_evaluations = 100
-config_population_size = 10
-config_offspring_population_size = 10
+config_max_evaluations = 2000000
+config_max_epochs = 2
+config_population_size = 20
+config_offspring_population_size = 20
 config_probability_mutation = 0.1
 config_probability_crossover = 0.3
-config_solution_length = 20
-config_dictionary_preloaded = False # True for load an initial dictionary
-config_dictionary_name = "dictionary.data"
+config_solution_length = 40
+#config_dictionary_preloaded = True # True for load an initial dictionary
+#config_dictionary_name = f"{config_solution_length}_dictionary.data"
 config_verbose = True
-
 
 if __name__ == '__main__':
 
     # Problem set
-    problem = llvmMultiobjetiveProblem(max_evaluations=config_max_evaluations,
+    problem = llvmMultiobjetiveProblem(
+        #max_evaluations=config_max_evaluations,
+        max_epochs=config_max_epochs,
         population_size=config_population_size,
         offspring_population_size=config_offspring_population_size,
         solution_length=config_solution_length,
-        dictionary_preloaded=config_dictionary_preloaded,
-        dictionary_name=config_dictionary_name,
+        #dictionary_preloaded=config_dictionary_preloaded,
+        #dictionary_name=config_dictionary_name,
         verbose=config_verbose)
 
     # Algorithm set
@@ -41,7 +44,9 @@ if __name__ == '__main__':
 
     algorithm.run()
 
-    with open("results.data","w") as file:
+    nds = get_non_dominated_solutions(algorithm.get_result())
+
+    with open(f"{problem.config_to_str()}_results.data","w") as file:
         #Outputs
         file.write('\nSettings:')
         file.write(f'\n\tAlgorithm: {algorithm.get_name()}')
@@ -54,7 +59,7 @@ if __name__ == '__main__':
         file.write(f'\n\tProbability crossover: {config_probability_crossover}')
         file.write(f'\n\tSolution length: {config_solution_length}')
         file.write('\nResults:')
-        for sol in get_non_dominated_solutions(algorithm.get_result()):
+        for sol in nds:
             file.write(f'\n\t\t{sol.variables}\t\t{sol.objectives}')
 
     print('\nSettings:')
@@ -68,12 +73,11 @@ if __name__ == '__main__':
     print(f'\tProbability crossover: {config_probability_crossover}')
     print(f'\tSolution length: {config_solution_length}')
     print(f'\nResults:')
-    for sol in get_non_dominated_solutions(algorithm.get_result()):
+    for sol in nds:
         print(f'\t\t{sol.variables}\t\t{sol.objectives}')
 
-    nds = get_non_dominated_solutions(algorithm.get_result())
-    plot_front = Plot(title='Pareto front approximation', axis_labels=['x', 'y'])
-    #plot_front.plot(nds, label='NSGAII')
-    #plot_front = Plot(title='Pareto front approximation', axis_labels=['runtime', 'codelines', 'tags', 'jmps', 'cond_jmps'])
-    plot_front.plot(nds, normalize=True, filename='output', format='eps')
+    plot_front = Plot(title='Pareto front aproximation', axis_labels=['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls'])
+    plot_front.plot([nds], normalize=False, filename=f'{problem.config_to_str()}_pareto_front', format='eps')
     
+    #plot_nfront = Plot(title='Pareto front normalized', axis_labels=['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls'])
+    #plot_nfront.plot([nds], normalize=True, filename='pareto_front_normalized', format='eps')

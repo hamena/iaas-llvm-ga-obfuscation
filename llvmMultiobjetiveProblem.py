@@ -9,23 +9,20 @@ from Evaluator import Evaluator
 
 class llvmMultiobjetiveProblem(IntegerProblem):
 
-    def __init__(self, is_minimization: bool = True, max_evaluations: int = 25000,
-                 from_file: bool = False, filename: str = None, solution_length: int = 100,
-                 population_size = int, offspring_population_size = int, verbose: bool = True, upper_bound : int = 86, 
-                 dictionary_preloaded: bool = True, dictionary_name: str = 'llvm_dictionary.data'):
+    def __init__(self, max_epochs: int = 500, filename: str = None, solution_length: int = 100, population_size = int, 
+                offspring_population_size = int, verbose: bool = True, upper_bound : int = 86):
 
         self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe='clang-10', optexe='opt-10', llcexe='llc-10')
-        self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', jobid='llvm_multiobjetive')
+        self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', jobid='llvm_multiobjective')
         self.evaluator = Evaluator(runs=1)
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
-        self.obj_labels = ['runtime', 'codelines', 'tags', 'jmp', 'jl_jge']
-        self.obj_directions = [self.MINIMIZE, self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
-        self.number_of_objectives = 5
+        self.obj_labels = ['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls']
+        self.obj_directions = [self.MINIMIZE, self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
+        self.number_of_objectives = 6
         self.number_of_constraints = 0
-        self.is_minimization = is_minimization
-        self.max_evaluations = max_evaluations
+        self.max_epochs = max_epochs
         self.evaluations = 0
         self.epoch = 1
         self.phenotype = 0
@@ -33,16 +30,19 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.offspring_population_size = offspring_population_size
         self.dictionary = dict()
         self.verbose = verbose
-        self.dictionary_preloaded = dictionary_preloaded
-        if self.dictionary_preloaded:
-            with open(f"{dictionary_name}","r") as file:
-                for line in file.readlines():
-                    line = line[:-1] # \n
-                    keyvalue = line.split(sep=";")
-                    self.dictionary.update({keyvalue[0]:keyvalue[1]})
+        self.preloaded_dictionary = f"{self.number_of_variables}_dictionary.data"
+        with open(self.preloaded_dictionary,"r") as file:
+            print(f"reading '{self.preloaded_dictionary}'...")
+            for line in file.readlines():
+                line = line[:-1] # \n
+                keyvalue = line.split(sep=";")
+                self.dictionary.update({keyvalue[0]:keyvalue[1]})
 
     def get_name(self):
         return 'Llvm Multiobjetive Problem'
+
+    def config_to_str(self):
+        return f"{self.population_size}_{self.offspring_population_size}_{self.number_of_variables}_{self.max_epochs}"
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
         self.phenotype +=1
@@ -68,8 +68,9 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             solution.objectives[0] = self.evaluator.get_runtime()
             solution.objectives[1] = self.evaluator.get_codelines()
             solution.objectives[2] = self.evaluator.get_tags()
-            solution.objectives[3] = self.evaluator.get_unconditional_jmps()
-            solution.objectives[4] = self.evaluator.get_conditional_jmps()
+            solution.objectives[3] = self.evaluator.get_total_jmps()
+            solution.objectives[4] = self.evaluator.get_function_tags()
+            solution.objectives[5] = self.evaluator.get_calls()
             self.dictionary.update({key: solution.objectives})
             self.evaluator.reset()
         else:
@@ -79,16 +80,11 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             solution.objectives[2] = value[2]
             solution.objectives[3] = value[3]
             solution.objectives[4] = value[4]
+            solution.objectives[5] = value[5]
         
         if self.verbose:
-            print("evaluated solution {:3} from epoch {:3} : variables = {}, fitness = {}"\
+            print("evaluated solution {:3} from epoch {:3} : variables={}, fitness={}"\
                 .format(self.phenotype,self.epoch,solution.variables,solution.objectives))
-            if self.phenotype == 1 and self.epoch == 1 :
-                with open(f"solutions_{self.population_size}_{self.offspring_population_size}.data","w") as file:
-                    file.write("iter epoch variables fitness\n")
-            with open(f"solutions_{self.population_size}_{self.offspring_population_size}.data","a") as file:
-                file.write(f"{self.phenotype} {self.epoch} {solution.variables} {solution.objectives}\n")
-        
         return solution
 
     ### FOR TERMINATION CRITERION ###
@@ -98,11 +94,9 @@ class llvmMultiobjetiveProblem(IntegerProblem):
     ### FOR TERMINATION CRITERION ###
     @property
     def is_met(self):
-        met = self.evaluations >= self.max_evaluations
+        met = self.epoch >= self.max_epochs
         if self.phenotype*self.epoch % 100 == 0 or met:
-            filename = "new_dictionary_{}_{}_{}.data".format(self.population_size,
-                        self.offspring_population_size, self.phenotype*self.epoch)
-            with open(filename,"w") as file:
+            with open(self.preloaded_dictionary, "w") as file:
                 for keys,values in self.dictionary.items():
                     file.write('{};{}\n'.format(keys,values))
         return met
