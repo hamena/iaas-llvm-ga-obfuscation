@@ -48,6 +48,10 @@ if __name__ == '__main__':
 
     nds = get_non_dominated_solutions(algorithm.get_result())
 
+    with open(f"{problem.config_to_str()}_results.csv","w") as file:
+        for sol in nds:
+            file.write(f'{sol.variables};{sol.objectives}\n')
+
     with open(f"{problem.config_to_str()}_results.data","w") as file:
         #Outputs
         file.write('\nSettings:')
@@ -76,8 +80,7 @@ if __name__ == '__main__':
     print(f'\tSolution length: {config_solution_length}')
     print(f'\nResults:')
     for sol in nds:
-        print(f'\t\t{sol.variables}\t\t{sol.objectives}')
+        print(f'\t{sol.variables}\t\t{sol.objectives}')
 
     plot_front = Plot(title='Pareto front aproximation', axis_labels=['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls'])
-    plot_front.plot([nds], normalize=False, filename=f'{problem.config_to_str()}_pareto_front', format='eps')
     
