@@ -78,6 +78,6 @@ if __name__ == '__main__':
     for sol in nds:
         print(f'\t\t{sol.variables}\t\t{sol.objectives}')
 
-    #plot_front = Plot(title='Pareto front aproximation', axis_labels=['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls'])
-    #plot_front.plot([nds], normalize=False, filename=f'{problem.config_to_str()}_pareto_front', format='eps')
+    plot_front = Plot(title='Pareto front aproximation', axis_labels=['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls'])
+    plot_front.plot([nds], normalize=False, filename=f'{problem.config_to_str()}_pareto_front', format='eps')
     
