@@ -14,7 +14,8 @@ class llvmMultiobjetiveProblem(IntegerProblem):
                 offspring_population_size = int, verbose: bool = True, upper_bound : int = 86):
 
         self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe='clang-10', optexe='opt-10', llcexe='llc-10')
-        self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', jobid='llvm_multiobjective')
+        self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', 
+                                jobid=f'{population_size}_{offspring_population_size}_{solution_length}')
         self.evaluator = Evaluator(runs=1)
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
