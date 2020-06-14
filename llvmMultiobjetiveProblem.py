@@ -1,4 +1,5 @@
 import sys
+import os
 
 from jmetal.core.problem import IntegerProblem
 from jmetal.core.solution import IntegerSolution
@@ -31,15 +32,16 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.dictionary = dict()
         self.verbose = verbose
         self.preloaded_dictionary = f"{self.number_of_variables}_dictionary.data"
-        with open(self.preloaded_dictionary,"r") as file:
-            print(f"reading '{self.preloaded_dictionary}'...")
-            for line in file.readlines():
-                line = line[:-1] # \n
-                keyvalue = line.split(sep=";")
-                self.dictionary.update({keyvalue[0]:keyvalue[1]})
+        if os.path.exists(self.preloaded_dictionary):
+            with open(self.preloaded_dictionary,"r") as file:
+                print(f"reading '{self.preloaded_dictionary}'...")
+                for line in file.readlines():
+                    line = line[:-1] # \n
+                    keyvalue = line.split(sep=";")
+                    self.dictionary.update({keyvalue[0]:keyvalue[1]})
 
     def get_name(self):
-        return 'Llvm Multiobjetive Problem'
+        return 'Llvm Multiobjective Problem'
 
     def config_to_str(self):
         return f"{self.population_size}_{self.offspring_population_size}_{self.number_of_variables}_{self.max_epochs}"
