@@ -43,22 +43,22 @@ class Evaluator():
         self.total_jmps = self.conditional_jmps + self.unconditional_jmps
         self.codelines = self.total_codelines - self.tags - self.function_tags - self.calls - self.total_jmps
         
-        if not os.path.exists(source_exe):
-            raise Exception("Source executable file '{}' doesn't exists.")
+        #if not os.path.exists(source_exe):
+        #    raise Exception("Source executable file '{}' doesn't exists.")
 
-        error = False
-        average = 0.0
-        for _ in range(self.runs):
-            start_time = time.time()
-            returncode = subprocess.run(source_exe).returncode
-            if returncode:
-                error = True
-                break
-            average += time.time() - start_time
-        if not error:
-            self.runtime = average / self.runs
-        else:
-            self.runtime = sys.maxsize
+        #error = False
+        #average = 0.0
+        #for _ in range(self.runs):
+        #    start_time = time.time()
+        #    returncode = subprocess.run(source_exe).returncode
+        #    if returncode:
+        #        error = True
+        #        break
+        #    average += time.time() - start_time
+        #if not error:
+        #    self.runtime = average / self.runs
+        #else:
+        #    self.runtime = sys.maxsize
 
     def reset(self):
         self.total_codelines = 0
@@ -96,19 +96,19 @@ class Evaluator():
         return self.total_jmps
 
     def get_ratio_tags(self) -> float:
-        return self.tags / self.codelines
+        return self.tags / self.total_codelines
 
     def get_ratio_function_tags(self) -> float:
-        return self.function_tags / self.codelines
+        return self.function_tags / self.total_codelines
 
     def get_ratio_calls(self) -> float:
-        return self.calls / self.codelines
+        return self.calls / self.total_codelines
 
     def get_ratio_unconditional_jmps(self) -> float:
-        return self.unconditional_jmps / self.codelines
+        return self.unconditional_jmps / self.total_codelines
 
     def get_ratio_conditional_jmps(self) -> float:
-        return self.conditional_jmps / self.codelines
+        return self.conditional_jmps / self.total_codelines
 
     def get_ratio_total_jmps(self) -> int:
-        return self.total_jmps / self.codelines
+        return self.total_jmps / self.total_codelines

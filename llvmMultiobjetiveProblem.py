@@ -20,9 +20,11 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
-        self.obj_labels = ['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls']
-        self.obj_directions = [self.MINIMIZE, self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
-        self.number_of_objectives = 6
+        #self.obj_labels = ['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls']
+        #self.obj_directions = [self.MINIMIZE, self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
+        self.obj_labels = ['codelines', 'tags', 'jumps', 'function_tags', 'calls']
+        self.obj_directions = [self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
+        self.number_of_objectives = 5
         self.number_of_constraints = 0
         self.max_epochs = max_epochs
         self.evaluations = 0
@@ -68,22 +70,22 @@ class llvmMultiobjetiveProblem(IntegerProblem):
 
             # Get measures
             self.evaluator.evaluate(source_ll=self.llvmfiles.get_optimized_ll(), source_exe=self.llvmfiles.get_optimized_exe())
-            solution.objectives[0] = self.evaluator.get_runtime()
-            solution.objectives[1] = self.evaluator.get_codelines()
-            solution.objectives[2] = self.evaluator.get_tags()
-            solution.objectives[3] = self.evaluator.get_total_jmps()
-            solution.objectives[4] = self.evaluator.get_function_tags()
-            solution.objectives[5] = self.evaluator.get_calls()
+            #solution.objectives[0] = self.evaluator.get_runtime()
+            solution.objectives[0] = self.evaluator.get_codelines()
+            solution.objectives[1] = self.evaluator.get_tags()
+            solution.objectives[2] = self.evaluator.get_total_jmps()
+            solution.objectives[3] = self.evaluator.get_function_tags()
+            solution.objectives[4] = self.evaluator.get_calls()
             self.dictionary.update({key: solution.objectives})
             self.evaluator.reset()
         else:
             # Get stored value
+            #solution.objectives[0] = value[0]
             solution.objectives[0] = value[0]
             solution.objectives[1] = value[1]
             solution.objectives[2] = value[2]
             solution.objectives[3] = value[3]
             solution.objectives[4] = value[4]
-            solution.objectives[5] = value[5]
         
         if self.verbose:
             print("evaluated solution {:3} from epoch {:3} : variables={}, fitness={}"\
