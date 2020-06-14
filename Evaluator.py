@@ -43,22 +43,23 @@ class Evaluator():
         self.total_jmps = self.conditional_jmps + self.unconditional_jmps
         self.codelines = self.total_codelines - self.tags - self.function_tags - self.calls - self.total_jmps
         
-        #if not os.path.exists(source_exe):
-        #    raise Exception("Source executable file '{}' doesn't exists.")
+        if self.runs > 0:
+            if not os.path.exists(source_exe):
+                raise Exception("Source executable file '{}' doesn't exists.")
 
-        #error = False
-        #average = 0.0
-        #for _ in range(self.runs):
-        #    start_time = time.time()
-        #    returncode = subprocess.run(source_exe).returncode
-        #    if returncode:
-        #        error = True
-        #        break
-        #    average += time.time() - start_time
-        #if not error:
-        #    self.runtime = average / self.runs
-        #else:
-        #    self.runtime = sys.maxsize
+            error = False
+            average = 0.0
+            for _ in range(self.runs):
+                start_time = time.time()
+                returncode = subprocess.run(source_exe).returncode
+                if returncode:
+                    error = True
+                    break
+                average += time.time() - start_time
+            if not error:
+                self.runtime = average / self.runs
+            else:
+                self.runtime = sys.maxsize
 
     def reset(self):
         self.total_codelines = 0

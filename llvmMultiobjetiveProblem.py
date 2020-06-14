@@ -16,12 +16,10 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe='clang-10', optexe='opt-10', llcexe='llc-10')
         self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', 
                                 jobid=f'{population_size}_{offspring_population_size}_{solution_length}')
-        self.evaluator = Evaluator(runs=1)
+        self.evaluator = Evaluator(runs=0)
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
-        #self.obj_labels = ['runtime', 'codelines', 'tags', 'jumps', 'function_tags', 'calls']
-        #self.obj_directions = [self.MINIMIZE, self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
         self.obj_labels = ['codelines', 'tags', 'jumps', 'function_tags', 'calls']
         self.obj_directions = [self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
         self.number_of_objectives = 5
@@ -70,7 +68,6 @@ class llvmMultiobjetiveProblem(IntegerProblem):
 
             # Get measures
             self.evaluator.evaluate(source_ll=self.llvmfiles.get_optimized_ll(), source_exe=self.llvmfiles.get_optimized_exe())
-            #solution.objectives[0] = self.evaluator.get_runtime()
             solution.objectives[0] = self.evaluator.get_codelines()
             solution.objectives[1] = self.evaluator.get_tags()
             solution.objectives[2] = self.evaluator.get_total_jmps()
@@ -80,7 +77,6 @@ class llvmMultiobjetiveProblem(IntegerProblem):
             self.evaluator.reset()
         else:
             # Get stored value
-            #solution.objectives[0] = value[0]
             solution.objectives[0] = value[0]
             solution.objectives[1] = value[1]
             solution.objectives[2] = value[2]
