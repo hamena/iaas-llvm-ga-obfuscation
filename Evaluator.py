@@ -75,6 +75,9 @@ class Evaluator():
     def get_runtime(self) -> float:
         return self.runtime
 
+    def get_total_codelines(self) -> int:
+        return self.total_codelines
+
     def get_codelines(self) -> int:
         return self.codelines
 
