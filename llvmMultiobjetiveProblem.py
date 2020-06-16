@@ -1,47 +1,51 @@
 import sys
+import os
 
 from jmetal.core.problem import IntegerProblem
 from jmetal.core.solution import IntegerSolution
 
 from LlvmUtils import LlvmUtils
+from LlvmUtils import LlvmFiles
+from Evaluator import Evaluator
 
 class llvmMultiobjetiveProblem(IntegerProblem):
 
-    def __init__(self, is_minimization: bool = True, max_evaluations: int = 25000,
-                 from_file: bool = False, filename: str = None, solution_length: int = 100,
-                 population_size = int, offspring_population_size = int, verbose: bool = True,
-                 upper_bound : int = 86, assambly_lines: bool = True,
-                 dictionary_preloaded: bool = True, dictionary_name: str = 'llvm_dictionary.data'):
+    def __init__(self, max_epochs: int = 500, filename: str = None, solution_length: int = 100, population_size = int, 
+                offspring_population_size = int, verbose: bool = True, upper_bound : int = 86):
 
-        self.llvm = LlvmUtils(llvmpath='/usr/bin/', source="polybench_small/polybench_small_original.bc" ,jobid='llvm_multiobjetive', useperf=False)
+        self.llvm = LlvmUtils(llvmpath='/usr/bin/', clangexe='clang-10', optexe='opt-10', llcexe='llc-10')
+        self.llvmfiles = LlvmFiles(basepath='./', source_bc='polybench_small/polybench_small_original.bc', 
+                                jobid=f'{population_size}_{offspring_population_size}_{solution_length}')
+        self.evaluator = Evaluator(runs=0)
         self.number_of_variables = solution_length
         self.lower_bound = [0 for _ in range(self.number_of_variables)]
         self.upper_bound = [upper_bound for _ in range(self.number_of_variables)]
-        self.obj_directions = [self.MINIMIZE, self.MAXIMIZE]
-        self.obj_labels = ['runtime', 'codelines']
-        self.number_of_objectives = 2
+        self.obj_labels = ['codelines', 'tags', 'jumps', 'function_tags', 'calls']
+        self.obj_directions = [self.MAXIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
+        self.number_of_objectives = 5
         self.number_of_constraints = 0
-        self.is_minimization = is_minimization
-        self.max_evaluations = max_evaluations
+        self.max_epochs = max_epochs
         self.evaluations = 0
         self.epoch = 1
         self.phenotype = 0
         self.population_size = population_size
         self.offspring_population_size = offspring_population_size
-        self.assambly_lines = assambly_lines # False means fitness = runtime. True means fitness = code lines
         self.dictionary = dict()
         self.verbose = verbose
-        self.dictionary_preloaded = dictionary_preloaded
-        if self.dictionary_preloaded:
-            with open("llvm_dictionary.data","r") as file:
-                lines = file.readlines()
-                for line in lines:
-                    key = "["+"{}".format(line[:16])+"]"
-                    value = "{}".format(line[17:])[:-1]
-                    self.dictionary.update({key: value})
+        self.preloaded_dictionary = f"{self.number_of_variables}_dictionary.data"
+        if os.path.exists(self.preloaded_dictionary):
+            with open(self.preloaded_dictionary,"r") as file:
+                print(f"reading '{self.preloaded_dictionary}'...")
+                for line in file.readlines():
+                    line = line[:-1] # \n
+                    keyvalue = line.split(sep=";")
+                    self.dictionary.update({keyvalue[0]:keyvalue[1]})
 
     def get_name(self):
-        return 'Llvm Multiobjetive Problem'
+        return 'Llvm Multiobjective Problem'
+
+    def config_to_str(self):
+        return f"{self.population_size}_{self.offspring_population_size}_{self.number_of_variables}_{self.max_epochs}"
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
         self.phenotype +=1
@@ -49,34 +53,40 @@ class llvmMultiobjetiveProblem(IntegerProblem):
         if self.phenotype%(limit[0]+1) == 0:
             self.epoch += 1
             self.phenotype = 1
-        key = "{}".format(solution.variables)
+        key = f"{solution.variables}"
         value = self.dictionary.get(key)
         if value == None:
             # Decoding
             passes = ""
             for i in range(self.number_of_variables):
-                passes += " {}".format(self.llvm.get_passes()[solution.variables[i]])
+                passes += f" {self.llvm.get_passes()[solution.variables[i]]}"
 
-            solution.objectives[0] = self.llvm.get_runtime(passes=passes)
-            solution.objectives[1] = self.llvm.get_codelines(passes=passes)
+            # Optimize and generate resources
+            self.llvm.toIR(self.llvmfiles.get_original_bc(), self.llvmfiles.get_optimized_bc(), passes=passes)
+            self.llvm.toExecutable(self.llvmfiles.get_optimized_bc(), self.llvmfiles.get_optimized_exe())
+            self.llvm.toAssembly(self.llvmfiles.get_optimized_bc(), self.llvmfiles.get_optimized_ll())
+
+            # Get measures
+            self.evaluator.evaluate(source_ll=self.llvmfiles.get_optimized_ll(), source_exe=self.llvmfiles.get_optimized_exe())
+            solution.objectives[0] = self.evaluator.get_codelines()
+            solution.objectives[1] = self.evaluator.get_tags()
+            solution.objectives[2] = self.evaluator.get_total_jmps()
+            solution.objectives[3] = self.evaluator.get_function_tags()
+            solution.objectives[4] = self.evaluator.get_calls()
             self.dictionary.update({key: solution.objectives})
+            self.evaluator.reset()
         else:
+            # Get stored value
             solution.objectives[0] = value[0]
             solution.objectives[1] = value[1]
-        if self.verbose: # En este bloque hay que controlar objectives[0] y objectives[1]
-            strfitness=f"{solution.objectives}'"
-            print("evaluated solution {:3} from epoch {:3} : variables = {}, fitness = {}"\
-                   .format(self.phenotype,self.epoch,solution.variables,strfitness))
-            if self.phenotype == 1 and self.epoch == 1 :
-                with open(f"solutions_{self.population_size}_{self.offspring_population_size}.data","w") as file:
-                    file.write("{} {} {} {}\n".format("iter","epoch","variables","fitness"))
-            with open(f"solutions_{self.population_size}_{self.offspring_population_size}.data","a") as file:
-                file.write("{} {} {} {}\n"\
-                   .format(self.phenotype,self.epoch,solution.variables,strfitness))
+            solution.objectives[2] = value[2]
+            solution.objectives[3] = value[3]
+            solution.objectives[4] = value[4]
+        
+        if self.verbose:
+            print("evaluated solution {:3} from epoch {:3} : variables={}, fitness={}"\
+                .format(self.phenotype,self.epoch,solution.variables,solution.objectives))
         return solution
-
-    def get_onebyone(self):
-        return self.llvm.get_onebyone()
 
     ### FOR TERMINATION CRITERION ###
     def update(self, *args, **kwargs):
@@ -85,13 +95,9 @@ class llvmMultiobjetiveProblem(IntegerProblem):
     ### FOR TERMINATION CRITERION ###
     @property
     def is_met(self):
-        met = self.evaluations >= self.max_evaluations
+        met = self.epoch >= self.max_epochs
         if self.phenotype*self.epoch % 100 == 0 or met:
-            filename = "new_dictionary_{}_{}_{}.data".format(self.population_size,
-                        self.offspring_population_size, self.phenotype*self.epoch)
-            with open(filename,"w") as file:
+            with open(self.preloaded_dictionary, "w") as file:
                 for keys,values in self.dictionary.items():
-                    key = '{}'.format(keys).replace("[","").replace("]","")
-                    key = '{}'.format(key).replace(", ",",")
-                    file.write('{},{}\n'.format(key,values))
+                    file.write('{};{}\n'.format(keys,values))
         return met

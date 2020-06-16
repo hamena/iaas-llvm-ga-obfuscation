@@ -1,45 +1,30 @@
 
 """
-.. module:: llvmutils
+.. module:: LlvmUtils
    :platform: Unix, Windows
    :synopsis: Offers tools to use the llvm infrastructure 9.0.0
 
-.. moduleauthor:: Juan Carlos de la Torre <juan.detorre@uca.es>
+.. moduleauthor:: Juan Carlos de la Torre <juan.detorre@uca.es>, Jose Crespo Guerrero <jose.crespoguerrero@uca.es>
 
 """
 
-
-import os
 import subprocess
-import time
 from shutil import copy as copyfile
 import sys
 import numpy as np
 
 class LlvmUtils():
     '''
-    llvmpath = llvm path
-    basepath = work path
-    bechmark = benchmark folder name, has to be in work path
-    generator = script to merge all benchmark suite
-    source = name for benchmark IR code
-    runs = how many times should the benchmark be run
-    jobid = job identifier code
-    useperf = True means use perf for runtime so perf has to be installed
+    llvmpath: llvm path
+    basepath: work path
+    generator: script to merge all benchmark suite
     '''
-
-    def __init__(self, llvmpath: str = "/llvm/bin/", basepath: str = "./", benchmark: str = "polybench_small",
-                 generator: str = "original_merged_generator.sh", source: str = "polybench_small_original.bc",
-                 runs: int = 1, jobid: str = "", useperf : bool = True):
+    def __init__(self, llvmpath: str="/llvm/bin/", clangexe: str="clang", optexe: str="opt", 
+                llcexe: str="llc"):
         self.llvmpath = llvmpath
-        self.basepath = basepath
-        self.benchmark = benchmark
-        self.generator = generator
-        self.source = source
-        self.runs = runs
-        self.jobid = jobid
-        self.onebyones = 0
-        self.useperf = useperf
+        self.clangexe = clangexe
+        self.optexe = optexe
+        self.llcexe = llcexe
 
     @staticmethod
     def get_passes() -> list:
@@ -61,101 +46,39 @@ class LlvmUtils():
                       "-constmerge","-loop-sink","-instsimplify","-div-rem-pairs"]
         return all_passes
 
-    # To convert the original benchmark into LLVM IR
-    def benchmark_link(self) -> None:
-        os.chdir("{}{}/".format(self.basepath,self.benchmark))
-        os.system("./{} {}".format(self.generator,self.llvmpath))
-        copyfile("{}".format(self.source),"../{}".format(self.source))
-        os.chdir("../")
+    # original.bc --> optimized.bc
+    def toIR(self, source: str, output: str, passes: str = '-O3') -> bool:
+        resultcode = self.opt(source, output, passes)
+        if resultcode:
+            for p in passes:
+                resultcode = self.opt(source, output, p)
+                if resultcode: raise Exception(f"opt onebyone failed ({resultcode}): {passes}")
 
-    # To get the runtime
-    def get_runtime(self,passes: str = "-O3") -> float:
-        if (os.path.exists("{}optimized_{}.bc".format(self.basepath,self.jobid))):
-            os.remove("{}optimized_{}.bc".format(self.basepath,self.jobid))
-        copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
-        average = 0.0
-        if self.toIR(passes):
-            os.system("{}clang -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes {}".format(
-                       self.llvmpath,"-Xclang -disable-O0-optnone {}optimized_{}.bc -o {}exec_{}.o".format(
-                       self.basepath,self.jobid,self.basepath,self.jobid)))
-            if self.useperf:
-                cmd = subprocess.check_output("{}runtimes.sh {}exec_{}.o {}".format(
-                          self.basepath,self.basepath,self.jobid,self.runs),shell=True)
-                runtimes = np.array(cmd.decode("utf-8")[:-1].split(","),dtype=float)
-                average = np.median(runtimes)
-            else:
-                for _ in range(self.runs):
-                    start_time = time.time()
-                    os.system("{}exec_{}.o".format(self.basepath,self.jobid))
-                    average += time.time() - start_time
-                average /= self.runs
-        else:
-            average = sys.maxsize
-        return average
+    # optimized.bc --> optimized.o
+    def toExecutable(self, source: str, output: str): 
+        resultcode = self.clang(source, output)
+        if resultcode: raise Exception(f"clang failed ({resultcode}):\n\tsource: '{source}'\n\toutput: '{output}'")
 
-    # To get the number of lines of code
-    def get_codelines(self,passes: str = '-O3',source: str = "optimized.bc",
-                  output: str = "optimized.ll") -> int:
-        source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
-        output = "{}{}".format(self.basepath,output.replace(".bc","_{}.bc".format(self.jobid)))
-        if self.toIR(passes):
-            self.toAssembly()
-            with open("{}optimized_{}.ll".format(self.basepath,self.jobid),'r') as file:
-                result = len(file.readlines())
-        else:
-            result = 0
-        return result
+    # optimized.bc --> optimized.ll
+    def toAssembly(self, source: str, output: str):
+        resultcode = self.llc(source, output)
+        if resultcode: raise Exception(f"llc failed ({resultcode}):\n\tsource: '{source}'\n\toutput: '{output}'")
 
-    # To apply transformations
-    def toIR(self, passes: str = '-O3') -> bool:
-        if (os.path.exists("{}optimized_{}.bc".format(self.basepath,self.jobid))):
-            os.remove("{}optimized_{}.bc".format(self.basepath,self.jobid))
-        copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
-        result = self.allinone(passes)
-        if not result:
-            copyfile("{}{}".format(self.basepath,self.source),"{}optimized_{}.bc".format(self.basepath,self.jobid))
-            result = self.onebyone(passes)
-        return result
+    def opt(self, source: str, output: str, passes: str) -> bool:
+        command = "{}{} {} {} -o {}".format(self.llvmpath, self.optexe, passes, source, output)
+        completed = subprocess.run(command,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        return completed.returncode
 
-    # To transform from LLVM IR to assembly code
-    def toAssembly(self, source: str = "optimized.bc", output: str = "optimized.ll"):
-        source = "{}{}".format(self.basepath,source.replace(".bc","_{}.bc".format(self.jobid)))
-        output = "{}{}".format(self.basepath,output.replace(".ll","_{}.ll".format(self.jobid)))
-        os.system("{}llc {}{} -o {}{}".format(self.llvmpath,
-                  self.basepath,source,self.basepath,output))
+    def llc(self, source: str, output: str):
+        command = "{}{} {} -o {}".format(self.llvmpath, self.llcexe, source, output)
+        completed = subprocess.run(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return completed.returncode
 
-    # To apply transformations in one line
-    def allinone(self, passes: str = '-O3') -> bool:
-        result = True
-        cmd = subprocess.Popen("{}opt {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                                self.llvmpath,passes,self.basepath,self.jobid,self.basepath,
-                                self.jobid),shell=True,stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)
-        cmd.wait(timeout=20)
-        if cmd.returncode != 0:
-            cmd.kill()
-            result = False
-        return result
-    
-    # To apply transformations one by one
-    def onebyone(self, passes: str = '-O3') -> bool:
-        result = True
-        passeslist = passes.split(' ')
-        self.onebyones += 1
-        for llvm_pass in passeslist:
-            cmd = subprocess.Popen("{}opt {} {}optimized_{}.bc -o {}optimized_{}.bc".format(
-                                    self.llvmpath,llvm_pass, self.basepath,self.jobid,
-                                    self.basepath,self.jobid),shell=True,
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            cmd.wait(timeout=10)
-            if cmd.returncode != 0:
-                cmd.kill()
-                result = False
-        return result
-        
-    # To get the number of time onebyone is run
-    def get_onebyone(self):
-        return self.onebyones
+    def clang(self, source: str, output: str):
+        command = "{}{} -lm -O0 -Wno-everything -disable-llvm-optzns -disable-llvm-passes -Xclang -disable-O0-optnone {} -o {}"\
+            .format(self.llvmpath, self.clangexe, source, output)
+        completed = subprocess.run(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return completed.returncode
 
     # To add a file to the output file
     @staticmethod
@@ -169,21 +92,21 @@ class LlvmUtils():
     @staticmethod
     def fileToDictionary(input_: str, dic: list):
         with open(input_,"r") as file:
-                lines = file.readlines()
-                for line in lines:
-                    index = line.rfind(',')
-                    key = "["+"{}".format(line[:index])+"]"
-                    value = "{}".format(line[index+1:])[:-1]
-                    dic.update({key: value})
+            lines = file.readlines()
+            for line in lines:
+                index = line.rfind(',')
+                key = "["+"{}".format(line[:index])+"]"
+                value = "{}".format(line[index+1:])[:-1]
+                dic.update({key: value})
 
     # Dictionary to file
     @staticmethod
     def dictionaryToFile(filename: str, dic: list):
         with open(filename,"w") as file:
-                for keys,values in dic.items():
-                    key = '{}'.format(keys).replace("[","").replace("]","")
-                    key = '{}'.format(key).replace(", ",",")
-                    file.write('{},{}\n'.format(key,values))
+            for keys,values in dic.items():
+                key = '{}'.format(keys).replace("[","").replace("]","")
+                key = '{}'.format(key).replace(", ",",")
+                file.write('{},{}\n'.format(key,values))
 
     # To encode file from passes to integers
     @staticmethod
@@ -214,4 +137,37 @@ class LlvmUtils():
                     for key in keys:
                         newkey += '{},'.format(LlvmUtils.get_passes()[int(key)])
                     ouputfile.write('{}{}\n'.format(newkey,value))
-                    
+                
+
+
+class LlvmFiles():
+    '''
+    basepath = working directory
+    source_bc = path to a llvm bc source file
+    jobid: files namespace
+    '''
+    def __init__(self, basepath: str='./', source_bc: str='polybench_small_original.bc', jobid: str=''):
+        self.basepath = basepath
+        self.jobid = jobid
+        self.original_bc = f"{basepath}{source_bc}"
+        self.optimized_bc = f"{basepath}{jobid}_optimized.bc"
+        self.optimized_ll = f"{basepath}{jobid}_optimized.ll"
+        self.optimized_exe = f"{basepath}{jobid}_optimized.o"
+
+    def get_basepath(self):
+        return self.basepath
+    
+    def get_jobid(self):
+        return self.jobid
+    
+    def get_original_bc(self):
+        return self.original_bc
+    
+    def get_optimized_bc(self):
+        return self.optimized_bc
+    
+    def get_optimized_ll(self):
+        return self.optimized_ll
+    
+    def get_optimized_exe(self):
+        return self.optimized_exe
